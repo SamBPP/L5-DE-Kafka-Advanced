@@ -1,25 +1,24 @@
-import argparse
-from src.create_topics import create_topics
-from src.producer import run_producer
-from src.consumer import run_consumer
+from src.producer import QuixProducer
+from src.consumer import QuixConsumer
+import threading
+import time
 
-def main():
-    parser = argparse.ArgumentParser(description="Kafka Advanced Dev Server")
-    parser.add_argument('--create-topics', action='store_true', help='Create Kafka topics')
-    parser.add_argument('--produce', action='store_true', help='Run Kafka producer')
-    parser.add_argument('--consume', action='store_true', help='Run Kafka consumer')
-    parser.add_argument('--topic', type=str, default='test-topic', help='Kafka topic name')
-    parser.add_argument('--num-messages', type=int, default=10, help='Number of messages to produce/consume')
-    args = parser.parse_args()
+def run_producer():
+    producer = QuixProducer()
+    try:
+        for i in range(10):
+            producer.send_message(f"Hello Kafka {i}")
+            time.sleep(1)
+    finally:
+        producer.close()
 
-    if args.create_topics:
-        create_topics([args.topic])
-    elif args.produce:
-        run_producer(args.topic, args.num_messages)
-    elif args.consume:
-        run_consumer(args.topic, args.num_messages)
-    else:
-        parser.print_help()
+def run_consumer():
+    consumer = QuixConsumer()
+    consumer.consume_messages()
 
 if __name__ == "__main__":
-    main()
+    consumer_thread = threading.Thread(target=run_consumer)
+    consumer_thread.start()
+
+    time.sleep(2)  # Wait for consumer to start
+    run_producer()

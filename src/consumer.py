@@ -1,28 +1,17 @@
-class KafkaConsumer:
-    def __init__(self, topic, bootstrap_servers='localhost:9092'):
-        from confluent_kafka import Consumer
-        self.consumer = Consumer({
-            'bootstrap.servers': bootstrap_servers,
-            'group.id': 'my_group',
-            'auto.offset.reset': 'earliest'
-        })
-        self.topic = topic
-        self.consumer.subscribe([self.topic])
+from quixstreams import Application
+
+class QuixConsumer:
+    def __init__(self, broker_address="localhost:9092", topic_name="test-topic"):
+        self.app = Application(broker_address)
+        self.topic = self.app.topic(topic_name)
+        self.consumer = self.app.get_consumer()
 
     def consume_messages(self):
-        try:
-            while True:
-                msg = self.consumer.poll(1.0)  # Timeout of 1 second
-                if msg is None:
-                    continue
-                if msg.error():
-                    print(f"Consumer error: {msg.error()}")
-                    continue
-                print(f"Received message: {msg.value().decode('utf-8')}")
-        except KeyboardInterrupt:
-            pass
-        finally:
-            self.close()
+        def callback(message):
+            print(f"Received message: {message.value().decode('utf-8')}")
+
+        self.consumer.subscribe(self.topic, callback)
+        self.app.run()  # Blocking call; listens indefinitely
 
     def close(self):
-        self.consumer.close()
+        self.app.close()
