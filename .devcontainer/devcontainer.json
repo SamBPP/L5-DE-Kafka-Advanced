@@ -1,0 +1,20 @@
+{
+  "name": "Python + Kafka Devcontainer",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "dev",  // must match the service name used for your dev environment
+  "workspaceFolder": "/workspace",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-toolsai.jupyter",
+        "ms-azuretools.vscode-docker"
+      ]
+    },
+    "settings": {
+      "terminal.integrated.shell.linux": "/bin/bash"
+    }
+  },
+  "postCreateCommand": "pip install -r requirements.txt",
+  "remoteUser": "vscode"
+}
