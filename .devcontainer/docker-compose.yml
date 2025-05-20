@@ -1,19 +1,6 @@
 version: '3.8'
 
 services:
-  dev:
-    image: python:3.10-slim
-    container_name: dev-python
-    volumes:
-      - .:/workspace
-    working_dir: /workspace
-    command: sleep infinity
-    networks:
-      - kafka-net
-    depends_on:
-      - kafka
-    environment:
-      - PYTHONUNBUFFERED=1
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
