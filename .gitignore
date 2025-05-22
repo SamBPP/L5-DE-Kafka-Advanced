@@ -1,2 +1,4 @@
 # Files to include in the repository
 __pycache__/
+.env
+*.ipynb
