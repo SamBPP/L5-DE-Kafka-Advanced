@@ -51,7 +51,7 @@ def consume_messages(bootstrap_servers,
             if message_key not in stored_messages:
                 print(f"Key: {message_key}")
                 print(f"Order Data: {json.dumps(message_value, indent=2)}\n---\n")
-                stored_messages[message_key] = message_value
+                stored_messages[message_key] = json.loads(message_value)
                 save_stored_messages(stored_messages)
             else:
                 print(f"Duplicate Key Skipped: {message_key}")

@@ -52,13 +52,13 @@ def create_messages(producer,
             "order_time": curr_time.strftime("%H:%M:%S")
         }
         # Serialize the order to Avro format
-        if validate_record:
+        if validate_record(order, schema):
             avro_bytes = serialize_avro(order, schema)
         # Send the serialized order to Kafka
-        producer.send(topic_name,
-                      key=order["order_id"], 
-                      value=avro_bytes)
-        print(f"Sent: {order}")
+            producer.send(topic_name,
+                          key=order["order_id"],
+                          value=avro_bytes)
+            print(f"Sent: {order}")
         time.sleep(1)
 
     producer.flush()
@@ -77,8 +77,8 @@ if __name__ == "__main__":
         # create Kafka producer
         producer = KafkaProducer(
             bootstrap_servers=os.getenv("BOOTSTRAP_SERVERS"),
-            # key_serializer=lambda k: k.encode("utf-8"),
-            # value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+            key_serializer=lambda k: k.encode("utf-8"), # need to keep in as it won't be serialised otherwise
+            value_serializer=lambda v: v,  # Avro bytes are already in bytes format
             security_protocol='SASL_SSL',
             sasl_mechanism='SCRAM-SHA-256',
             sasl_plain_username=os.getenv("SASL_USERNAME"),

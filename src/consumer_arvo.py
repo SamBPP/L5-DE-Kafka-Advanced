@@ -48,8 +48,8 @@ def consume_messages(bootstrap_servers,
         sasl_plain_password=os.getenv("SASL_PASSWORD"),
         auto_offset_reset='earliest',
         enable_auto_commit=True,
-        key_deserializer=lambda k: k.decode("utf-8") if k else None,
-        value_deserializer=lambda v: json.loads(v.decode("utf-8"))
+        key_deserializer=lambda k: k.decode("utf-8") if k else None, # need to keep in as it won't be deserialized otherwise
+        value_deserializer=lambda v: v  # Avro bytes are already in bytes format
     )
     print(f"Connecting to Kafka server at {bootstrap_servers}...")
     print(f"Consumer group ID: {group_id}")

@@ -46,7 +46,7 @@ def transform_messages(bootstrap_servers,
             print(f"Key: {message_key}")
             print(f"Order Data: {json.dumps(message_value, indent=2)}\n---\n")
 
-            order = json.dumps(message_value)
+            order = json.loads(message_value)
             new_order = {
                 "order_id": order["order_id"],
                 "product": order["product"],
