@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "Order",
+  "fields": [
+    {"name": "order_id", "type": "string"},
+    {"name": "customer_name", "type": "string"},
+    {"name": "product", "type": "string"},
+    {"name": "quantity", "type": "int"},
+    {"name": "price", "type": "float"},
+    {"name": "order_date", "type": "string"},
+    {"name": "order_time", "type": "string"}
+      ]
+}

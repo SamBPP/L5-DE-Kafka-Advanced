@@ -5,11 +5,35 @@ import numpy as np
 import random
 import math
 import argparse
+import io
+from avro.io import DatumWriter, BinaryEncoder
+from avro.schema import Parse
 from faker import Faker
 from kafka import KafkaProducer
 from dotenv import load_dotenv
 from datetime import datetime
 
+# Load Avro schema
+schema_path = "order.avsc"
+schema = Parse(open(schema_path, "r").read())
+
+def serialize_avro(record, schema):
+    writer = DatumWriter(schema)
+    bytes_writer = io.BytesIO()
+    encoder = BinaryEncoder(bytes_writer)
+    writer.write(record, encoder)
+    return bytes_writer.getvalue()
+
+def validate_record(record, schema):
+    try:
+        writer = DatumWriter(schema)
+        buffer = io.BytesIO()
+        encoder = BinaryEncoder(buffer)
+        writer.write(record, encoder)
+        return True
+    except Exception as e:
+        print("Validation failed:", e)
+        return False
 
 def create_messages(producer,
                     topic_name,
@@ -27,14 +51,18 @@ def create_messages(producer,
             "order_date": curr_time.strftime("%Y-%m-%d"),
             "order_time": curr_time.strftime("%H:%M:%S")
         }
-
+        # Serialize the order to Avro format
+        if validate_record:
+            avro_bytes = serialize_avro(order, schema)
+        # Send the serialized order to Kafka
         producer.send(topic_name,
                       key=order["order_id"], 
-                      value=json.dumps(order))
+                      value=avro_bytes)
         print(f"Sent: {order}")
         time.sleep(1)
 
     producer.flush()
+
 
 if __name__ == "__main__":
     try:
@@ -49,8 +77,8 @@ if __name__ == "__main__":
         # create Kafka producer
         producer = KafkaProducer(
             bootstrap_servers=os.getenv("BOOTSTRAP_SERVERS"),
-            key_serializer=lambda k: k.encode("utf-8"),
-            value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+            # key_serializer=lambda k: k.encode("utf-8"),
+            # value_serializer=lambda v: json.dumps(v).encode("utf-8"),
             security_protocol='SASL_SSL',
             sasl_mechanism='SCRAM-SHA-256',
             sasl_plain_username=os.getenv("SASL_USERNAME"),
