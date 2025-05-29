@@ -67,6 +67,5 @@ if __name__ == "__main__":
     finally:
         # Clean up and close the producer
         print("Flushing messages...")
-        producer.flush()
         producer.close()
         print("Producer closed.")

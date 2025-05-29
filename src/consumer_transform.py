@@ -1,28 +1,13 @@
 import os
 import json
 import argparse
-from kafka import KafkaConsumer
+from kafka import KafkaConsumer, KafkaProducer
 from dotenv import load_dotenv
 
-STORAGE_FILE = "consumed_messages.json"
-
-def load_stored_messages():
-    if not os.path.exists(STORAGE_FILE):
-        with open(STORAGE_FILE, "w") as f:
-            json.dump({}, f)
-    with open(STORAGE_FILE, "r") as f:
-        return json.load(f)
-
-def save_stored_messages(data):
-    with open(STORAGE_FILE, "w") as f:
-        json.dump(data, f, indent=2)
-    return
-
-def consume_messages(bootstrap_servers,
-                     topic_name='orders',
-                     group_id='order-consumer-group'):
-    # Load existing messages
-    stored_messages = load_stored_messages()
+def transform_messages(bootstrap_servers,
+                       topic_name='orders',
+                       group_id='order-consumer-group',
+                       new_topic_name='orders_clean'):
 
     # Create Kafka consumer
     consumer = KafkaConsumer(
@@ -41,20 +26,37 @@ def consume_messages(bootstrap_servers,
     print(f"Connecting to Kafka server at {bootstrap_servers}...")
     print(f"Consumer group ID: {group_id}")
     print(f"Subscribed to topic: {topic_name}. Waiting for messages...\n")
+    
+    producer = KafkaProducer(
+        bootstrap_servers=os.getenv("BOOTSTRAP_SERVERS"),
+        key_serializer=lambda k: k.encode("utf-8"),
+        value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+        security_protocol='SASL_SSL',
+        sasl_mechanism='SCRAM-SHA-256',
+        sasl_plain_username=os.getenv("SASL_USERNAME"),
+        sasl_plain_password=os.getenv("SASL_PASSWORD")
+    )
+
     # Consume messages
     try:
         for message in consumer:
             # Print message details
             message_key = message.key
             message_value = message.value
-            # Store message in the dictionary
-            if message_key not in stored_messages:
-                print(f"Key: {message_key}")
-                print(f"Order Data: {json.dumps(message_value, indent=2)}\n---\n")
-                stored_messages[message_key] = message_value
-                save_stored_messages(stored_messages)
-            else:
-                print(f"Duplicate Key Skipped: {message_key}")
+            print(f"Key: {message_key}")
+            print(f"Order Data: {json.dumps(message_value, indent=2)}\n---\n")
+
+            order = json.dumps(message_value)
+            new_order = {
+                "order_id": order["order_id"],
+                "product": order["product"],
+                "total_price": order["quantity"] * order["price"]
+            }
+            # Send transformed message to new topic
+            producer.send(new_topic_name,
+                          key=new_order["order_id"],
+                          value=json.dumps(new_order))
+            print(f"Sent Order ID: {new_order["order_id"]}")
 
     except KeyboardInterrupt:
         # Handle keyboard interrupt
@@ -73,4 +75,4 @@ if __name__ == "__main__":
     parser.add_argument("--group", "-g", type=str, default="order-consumer-group", help="Consumer group ID")
     args = parser.parse_args()
 
-    consume_messages(bootstrap_servers, topic_name=args.topic, group_id=args.group)
+    transform_messages(bootstrap_servers, topic_name=args.topic, group_id=args.group)
